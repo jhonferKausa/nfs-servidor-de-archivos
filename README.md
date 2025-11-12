@@ -30,7 +30,7 @@ sudo apt update && sudo apt upgrade -y
 
 Instalamos los paquetes necesarios para habilitar el servicio NFS:
 
-```bash
+```
 sudo apt install nfs-kernel-server -y
 
 ---

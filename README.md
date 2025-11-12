@@ -50,12 +50,12 @@ Se asignan permisos amplios para facilitar el acceso desde los clientes. En ento
 
 Editamos el archivo de configuración principal de NFS:
 
-```bash
+```
 sudo nano /etc/exports
 
 Agregamos la siguiente línea (ajustando la IP de red según corresponda):
 
-```bash
+```
 /srv/nfs/compartido 192.168.56.0/24(rw,sync,no_subtree_check)
 
 

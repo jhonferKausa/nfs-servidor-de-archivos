@@ -26,7 +26,7 @@ sudo apt update && sudo apt upgrade -y
 
 ---
 
-##Paso 2. Instalar el servidor NFS
+## Paso 2. Instalar el servidor NFS
 
 Instalamos los paquetes necesarios para habilitar el servicio NFS:
 

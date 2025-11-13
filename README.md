@@ -58,5 +58,87 @@ Agregamos la siguiente línea (ajustando la IP de red según corresponda):
 ```
 /srv/nfs/compartido 192.168.56.0/24(rw,sync,no_subtree_check)
 
+- rw: Permite lectura y escritura.
+- sync: Asegura que los cambios se escriban inmediatamente en el disco.
+- no_subtree_check: Mejora el rendimiento al evitar verificaciones adicionales.
 
+Guardamos el archivo y aplicamos los cambios:
+
+sudo exportfs -ra
+sudo systemctl restart nfs-kernel-server
+
+## Paso 5. Verificar el servicio NFS
+
+Comprobamos el estado del servicio:
+
+sudo systemctl status nfs-kernel-server
+
+Y verificamos qué carpetas están siendo compartidas:
+
+sudo exportfs -v
+
+## Paso 6. Configurar el cliente NFS (máquina que accede)
+
+En otra máquina Linux (cliente), instalamos el paquete necesario:
+
+sudo apt install nfs-common -y
+
+Creamos un punto de montaje:
+
+sudo mkdir -p /mnt/compartido
+
+Montamos el recurso compartido desde el servidor:
+
+sudo mount <IP_DEL_SERVIDOR>:/srv/nfs/compartido /mnt/compartido
+
+Por ejemplo:
+
+sudo mount 192.168.56.10:/srv/nfs/compartido /mnt/compartido
+
+Verificamos que el montaje fue exitoso:
+
+df -h | grep nfs
+
+## Paso 7. Montaje automático (opcional)
+
+Para montar la carpeta compartida automáticamente al iniciar el sistema, editamos el archivo /etc/fstab del cliente:
+
+sudo nano /etc/fstab
+
+Agregamos la línea:
+
+192.168.56.10:/srv/nfs/compartido /mnt/compartido nfs defaults 0 0
+
+Guardamos los cambios y montamos todo nuevamente:
+
+sudo mount -a
+
+## Paso 8. Prueba de funcionamiento
+
+Desde el cliente:
+
+touch /mnt/compartido/prueba.txt
+
+En el servidor:
+
+ls /srv/nfs/compartido/
+
+Deberías ver el archivo prueba.txt.
+Esto confirma que la conexión entre el servidor NFS y el cliente funciona correctamente.
+
+## Paso 9. Integración con OpenStack
+
+Cuando tengas tu entorno de OpenStack configurado, podrás integrar este servicio fácilmente:
+
+- Conecta el servidor NFS a la red interna de OpenStack.
+- Asigna una IP fija al servidor NFS (por ejemplo, 10.0.0.10).
+- En cada instancia Linux dentro de OpenStack:
+
+sudo apt install nfs-common -y
+sudo mkdir -p /mnt/nfs
+sudo mount 10.0.0.10:/srv/nfs/compartido /mnt/nfs
+
+- Puedes automatizar el montaje editando el archivo /etc/fstab como se mostró en el paso 7.
+
+## Paso 10. Solución de problemas comunes
 

@@ -1,144 +1,130 @@
-# Proyecto Final - Servidor de Almacenamiento Compartido con NFS en Ubuntu Server
+# 📁 Servidor de Almacenamiento Compartido con NFS en OpenStack
 
-## Descripción general
-
-Este proyecto tiene como objetivo **configurar un servidor de almacenamiento compartido utilizando NFS (Network File System)** sobre **Ubuntu Server**, permitiendo que **múltiples máquinas virtuales** puedan acceder a los mismos archivos de forma centralizada.  
-
-Este tipo de configuración es ideal para entornos de virtualización como **OpenStack**, donde varias instancias necesitan compartir datos o archivos de configuración.
+Este documento describe la configuración de un **servidor de almacenamiento compartido** utilizando **NFS (Network File System)**, así como el proceso para permitir que **múltiples máquinas virtuales creadas en OpenStack (MicroStack)** accedan a dicho recurso desde una red interna.
 
 ---
 
-## Requerimientos
+## 📌 Objetivo
 
-- **Ubuntu Server 22.04 LTS** (para el servidor)
-- **Una o más máquinas virtuales Linux** (para los clientes)
-- **Acceso con privilegios `sudo`**
-- **Conectividad de red** entre servidor y clientes
+* Implementar un **servidor de archivos NFS** en el nodo donde está instalado MicroStack.
+* Compartir un directorio accesible a través de la red interna de OpenStack (`10.20.20.0/24`).
+* Montar el recurso compartido en **varias instancias** de OpenStack.
+* Habilitar el acceso simultáneo para lectura y escritura.
 
 ---
 
-## Paso 1. Actualizar el sistema
+## 🖥️ 1. Instalación del servidor NFS en el host MicroStack
 
-Antes de iniciar, asegúrate de tener tu sistema actualizado:
+Actualizar paquetes e instalar el servicio:
 
 ```bash
-sudo apt update && sudo apt upgrade -y
-
----
-
-## Paso 2. Instalar el servidor NFS
-
-Instalamos los paquetes necesarios para habilitar el servicio NFS:
-
-```
+sudo apt update
 sudo apt install nfs-kernel-server -y
+```
 
 ---
 
-## Paso 3. Crear el directorio compartido
-
-Creamos la carpeta que será compartida entre las máquinas:
+## 📂 2. Creación del directorio compartido
 
 ```bash
-sudo mkdir -p /srv/nfs/compartido
-sudo chown nobody:nogroup /srv/nfs/compartido
-sudo chmod 777 /srv/nfs/compartido
-
-Se asignan permisos amplios para facilitar el acceso desde los clientes. En entornos productivos, se deben aplicar permisos más restrictivos.
-
-## Paso 4. Configurar las exportaciones
-
-Editamos el archivo de configuración principal de NFS:
-
+sudo mkdir -p /srv/compartido
+sudo chmod 777 /srv/compartido
 ```
+
+Este será el directorio accesible para las instancias de OpenStack.
+
+---
+
+## 🔧 3. Configuración de `/etc/exports`
+
+Editar el archivo:
+
+```bash
 sudo nano /etc/exports
+```
 
-Agregamos la siguiente línea (ajustando la IP de red según corresponda):
+Agregar la línea que permite acceso a la red interna de OpenStack:
 
 ```
-/srv/nfs/compartido 192.168.56.0/24(rw,sync,no_subtree_check)
+/srv/compartido 10.20.20.0/24(rw,sync,no_subtree_check,no_root_squash)
+```
 
-- rw: Permite lectura y escritura.
-- sync: Asegura que los cambios se escriban inmediatamente en el disco.
-- no_subtree_check: Mejora el rendimiento al evitar verificaciones adicionales.
+Aplicar los cambios:
 
-Guardamos el archivo y aplicamos los cambios:
-
+```bash
 sudo exportfs -ra
 sudo systemctl restart nfs-kernel-server
+```
 
-## Paso 5. Verificar el servicio NFS
+---
 
-Comprobamos el estado del servicio:
+## 🌐 4. Verificación del servidor NFS
 
-sudo systemctl status nfs-kernel-server
+Desde cualquier máquina virtual creada en OpenStack:
 
-Y verificamos qué carpetas están siendo compartidas:
+```bash
+showmount -e 10.20.20.1
+```
 
-sudo exportfs -v
+Salida esperada:
 
-## Paso 6. Configurar el cliente NFS (máquina que accede)
+```
+/srv/compartido 10.20.20.0/24
+```
 
-En otra máquina Linux (cliente), instalamos el paquete necesario:
+---
 
+## 🖥️ 5. Configuración de las máquinas virtuales de OpenStack
+
+En cada instancia, instalar el cliente NFS:
+
+```bash
+sudo apt update
 sudo apt install nfs-common -y
+```
 
-Creamos un punto de montaje:
+Crear el punto de montaje:
 
-sudo mkdir -p /mnt/compartido
-
-Montamos el recurso compartido desde el servidor:
-
-sudo mount <IP_DEL_SERVIDOR>:/srv/nfs/compartido /mnt/compartido
-
-Por ejemplo:
-
-sudo mount 192.168.56.10:/srv/nfs/compartido /mnt/compartido
-
-Verificamos que el montaje fue exitoso:
-
-df -h | grep nfs
-
-## Paso 7. Montaje automático (opcional)
-
-Para montar la carpeta compartida automáticamente al iniciar el sistema, editamos el archivo /etc/fstab del cliente:
-
-sudo nano /etc/fstab
-
-Agregamos la línea:
-
-192.168.56.10:/srv/nfs/compartido /mnt/compartido nfs defaults 0 0
-
-Guardamos los cambios y montamos todo nuevamente:
-
-sudo mount -a
-
-## Paso 8. Prueba de funcionamiento
-
-Desde el cliente:
-
-touch /mnt/compartido/prueba.txt
-
-En el servidor:
-
-ls /srv/nfs/compartido/
-
-Deberías ver el archivo prueba.txt.
-Esto confirma que la conexión entre el servidor NFS y el cliente funciona correctamente.
-
-## Paso 9. Integración con OpenStack
-
-Cuando tengas tu entorno de OpenStack configurado, podrás integrar este servicio fácilmente:
-
-- Conecta el servidor NFS a la red interna de OpenStack.
-- Asigna una IP fija al servidor NFS (por ejemplo, 10.0.0.10).
-- En cada instancia Linux dentro de OpenStack:
-
-sudo apt install nfs-common -y
+```bash
 sudo mkdir -p /mnt/nfs
-sudo mount 10.0.0.10:/srv/nfs/compartido /mnt/nfs
+```
 
-- Puedes automatizar el montaje editando el archivo /etc/fstab como se mostró en el paso 7.
+Montar el recurso compartido:
 
-## Paso 10. Solución de problemas comunes
+```bash
+sudo mount 10.20.20.1:/srv/compartido /mnt/nfs
+```
 
+Comprobar acceso:
+
+```bash
+echo "archivo desde la VM" | sudo tee /mnt/nfs/test.txt
+```
+
+---
+
+## 🔄 6. Montaje permanente mediante `/etc/fstab` (opcional)
+
+Para que el recurso se monte automáticamente al iniciar la instancia:
+
+Editar el archivo:
+
+```bash
+sudo nano /etc/fstab
+```
+
+Agregar:
+
+```
+10.20.20.1:/srv/compartido   /mnt/nfs   nfs   defaults   0   0
+```
+
+Aplicar:
+
+```bash
+sudo mount -a
+```
+
+
+
+Si quieres ampliarlo con un diagrama, explicación conceptual o sección de problemas comunes, puedo generarlo también.

@@ -124,3 +124,4 @@ Aplicar:
 ```bash
 sudo mount -a
 ```
+<img width="330" height="23" alt="image" src="https://github.com/user-attachments/assets/2492b331-543a-41cc-bdd0-b4397a657d0e" />

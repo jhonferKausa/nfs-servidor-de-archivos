@@ -1,7 +1,7 @@
 # 📁 Servidor de Almacenamiento Compartido con NFS en OpenStack
 
 Este documento describe la configuración de un **servidor de almacenamiento compartido** utilizando **NFS (Network File System)**, así como el proceso para permitir que **múltiples máquinas virtuales creadas en OpenStack (MicroStack)** accedan a dicho recurso desde una red interna.
-<img width="192" height="166" alt="image" src="https://github.com/user-attachments/assets/18e73665-6bb8-427f-8d78-2923c12a9e41" />
+<img width="632" height="216" alt="image" src="https://github.com/user-attachments/assets/eabfd2c0-3f7c-4f99-8334-6a9d71be5f36" />
 
 ---
 
